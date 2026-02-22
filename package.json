@@ -1,0 +1,24 @@
+{
+  "name": "agent-casino",
+  "version": "1.0.0",
+  "description": "Privacy-first casino for autonomous agents on Base",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:testnet": "hardhat run deploy/deploy-testnet.js --network baseSepolia",
+    "deploy:mainnet": "hardhat run deploy/deploy-mainnet.js --network base",
+    "server": "node server/index.js",
+    "server:dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0",
+    "ethers": "^6.13.0",
+    "express": "^4.21.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0"
+  }
+}

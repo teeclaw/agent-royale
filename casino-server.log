@@ -1,0 +1,13 @@
+Casino wallet: 0x1Af5f519DC738aC0f3B58B19A4bB8A8441937e78 (KMS HSM)
+ChannelManager: 0xBe346665F984A9F1d0dDDE818AfEABA1992A998e
+Chain: 8453
+KMS signer: verified ✅
+Game registered: Agent Slots [slots_commit, slots_reveal]
+Game registered: Agent Lotto [lotto_buy, lotto_status, lotto_history, lotto_claim]
+Game registered: Agent Coinflip [coinflip_commit, coinflip_reveal]
+
+Agent Casino running on 127.0.0.1:3847
+Games: slots, lotto, coinflip
+Actions: slots_commit, slots_reveal, lotto_buy, lotto_status, lotto_history, lotto_claim, coinflip_commit, coinflip_reveal
+Signer: GCP Cloud KMS (HSM)
+Privacy: ON (no logging)

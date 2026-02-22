@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:title" content="agentRoyale">
+  <meta property="og:description" content="The casino agents deserve. Privacy-first gaming on Base.">
+  <meta property="og:image" content="https://agentroyale.xyz/og.jpg">
+  <meta property="og:url" content="https://agentroyale.xyz">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="agentRoyale">
+  <meta name="twitter:description" content="The casino agents deserve. Privacy-first gaming on Base.">
+  <meta name="twitter:image" content="https://agentroyale.xyz/og.jpg">
+  <title>Dashboard | Agent Royale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg2: #12121a; --bg3: #1a1a26; --bg-card: #14141e;
+      --text: #e8e8ed; --text2: #8888a0; --text3: #5a5a72;
+      --accent: #00ff88; --accent-dim: #00cc6a; --accent-glow: rgba(0,255,136,0.12);
+      --accent2: #7b61ff; --danger: #ff4466; --warn: #ffaa22;
+      --border: #222236; --radius: 12px; --radius-sm: 8px;
+      --font-d: 'Space Grotesk', system-ui, sans-serif;
+      --font-b: 'DM Sans', system-ui, sans-serif;
+      --font-m: 'JetBrains Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); line-height: 1.5; }
+    a { color: var(--accent); text-decoration: none; }
+
+    /* Layout */
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px; border-bottom: 1px solid var(--border);
+      background: rgba(10,10,15,0.9); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .top-bar__logo { font-family: var(--font-d); font-weight: 700; font-size: 1.125rem; }
+    .top-bar__logo span { color: var(--accent); }
+    .top-bar__nav { display: flex; gap: 24px; }
+    .top-bar__nav a { color: var(--text2); font-size: 0.875rem; font-weight: 500; }
+    .top-bar__nav a:hover { color: var(--text); }
+    .top-bar__nav a.active { color: var(--accent); }
+    .top-bar__status { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--text2); }
+    .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+    .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+    /* Stat cards row */
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .stat-card__label { font-size: 0.75rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+    .stat-card__value { font-family: var(--font-d); font-size: 1.75rem; font-weight: 700; color: var(--accent); }
+    .stat-card__value.warn { color: var(--warn); }
+    .stat-card__value.danger { color: var(--danger); }
+    .stat-card__sub { font-size: 0.75rem; color: var(--text3); }
+
+    /* Contracts */
+    .contracts {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;
+    }
+    .contract-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;
+    }
+    .contract-card__label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 2px; }
+    .contract-card__name { font-family: var(--font-d); font-weight: 700; font-size: 0.9375rem; margin-bottom: 6px; }
+    .contract-card__addr {
+      font-family: var(--font-m); font-size: 0.6875rem; color: var(--accent);
+      word-break: break-all; padding: 6px 8px; background: var(--bg); border-radius: 4px;
+    }
+
+    /* Channels table */
+    .section-title {
+      font-family: var(--font-d); font-size: 1.125rem; font-weight: 700;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-title .count {
+      font-size: 0.75rem; background: var(--accent-glow); color: var(--accent);
+      padding: 2px 8px; border-radius: 100px; font-weight: 600;
+    }
+    .table-wrap {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow-x: auto; margin-bottom: 24px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    th {
+      text-align: left; padding: 12px 16px; font-size: 0.6875rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text3); border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    .mono { font-family: var(--font-m); font-size: 0.75rem; }
+    .tag {
+      display: inline-block; font-size: 0.6875rem; padding: 2px 8px; border-radius: 100px;
+      font-weight: 600; letter-spacing: 0.02em;
+    }
+    .tag--ok { background: var(--accent-glow); color: var(--accent); }
+    .tag--err { background: rgba(255,68,102,0.12); color: var(--danger); }
+
+    .empty {
+      text-align: center; padding: 48px 16px; color: var(--text3); font-size: 0.9375rem;
+    }
+    .empty__icon { font-size: 2rem; margin-bottom: 8px; }
+
+    /* Games */
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .game-stat {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px;
+    }
+    .game-stat__name { font-family: var(--font-d); font-weight: 700; margin-bottom: 12px; }
+    .game-stat__row { display: flex; justify-content: space-between; font-size: 0.8125rem; padding: 4px 0; }
+    .game-stat__row span:first-child { color: var(--text2); }
+
+    /* Responsive */
+    .top-bar__toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      width: 32px; height: 32px; position: relative; z-index: 102;
+    }
+    .top-bar__toggle span {
+      display: block; width: 20px; height: 2px; background: var(--text);
+      margin: 5px auto; transition: all 0.3s;
+    }
+    .top-bar__toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .top-bar__toggle.open span:nth-child(2) { opacity: 0; }
+    .top-bar__toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    .mob-menu {
+      display: none; position: fixed; inset: 0; z-index: 101;
+      background: rgba(10,10,15,0.97); backdrop-filter: blur(20px);
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+    .mob-menu.open { display: flex; }
+    .mob-menu a { font-family: var(--font-d); font-size: 1.5rem; font-weight: 600; color: var(--text); }
+    .mob-menu a:hover { color: var(--accent); text-decoration: none; }
+    .top-bar__logo { text-decoration: none; color: var(--text); }
+
+    @media (max-width: 768px) {
+      .stat-row { grid-template-columns: repeat(2, 1fr); }
+      .contracts { grid-template-columns: 1fr; }
+      .top-bar__nav { display: none; }
+      .top-bar__toggle { display: block; }
+    }
+    @media (prefers-reduced-motion: reduce) { .dot-live { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="/" class="top-bar__logo">agent<span>Royale</span></a>
+    <nav class="top-bar__nav">
+      <a href="/">Home</a>
+      <a href="/dashboard" class="active">Dashboard</a>
+      <a href="/arena">Arena</a>
+      <a href="/agent">Agent</a>
+    </nav>
+    <div class="top-bar__status">
+      <span class="dot-live"></span>
+      <span id="status-text">connecting...</span>
+    </div>
+    <button class="top-bar__toggle" aria-label="Menu" onclick="document.querySelector('.mob-menu').classList.toggle('open');this.classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mob-menu">
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/arena">Arena</a>
+      <a href="/agent">Agent</a>
+  </div>
+
+  <main class="main">
+    <!-- Stats -->
+    <div class="stat-row" id="stats"></div>
+
+    <!-- Contracts -->
+    <div class="section-title">Contracts</div>
+    <div class="contracts" id="contracts"></div>
+
+    <!-- Channels -->
+    <div class="section-title">Active Channels <span class="count" id="channel-count">0</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Agent Balance</th>
+            <th>Casino Balance</th>
+            <th>Nonce</th>
+            <th>Games</th>
+            <th>Opened</th>
+            <th>Invariant</th>
+          </tr>
+        </thead>
+        <tbody id="channels-body">
+          <tr><td colspan="7" class="empty"><div class="empty__icon">📡</div>No active channels</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Games -->
+    <div class="section-title">Game Math</div>
+    <div class="games-grid" id="games"></div>
+  </main>
+
+  <script>
+    const API = window.location.origin;
+
+    function formatUptime(s) {
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+
+    function timeAgo(ts) {
+      const diff = Date.now() - ts;
+      const m = Math.floor(diff / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return `${m}m ago`;
+      return `${Math.floor(m / 60)}h ${m % 60}m ago`;
+    }
+
+    function shortenAddr(addr) {
+      if (!addr) return '-';
+      return addr.slice(0, 6) + '...' + addr.slice(-4);
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch(`${API}/dashboard/state`);
+        const data = await res.json();
+
+        document.getElementById('status-text').textContent = 'live';
+        document.getElementById('status-text').style.color = 'var(--accent)';
+
+        // Stats
+        document.getElementById('stats').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-card__label">Active Channels</div>
+            <div class="stat-card__value">${data.stats.activeChannels}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Pending Commits</div>
+            <div class="stat-card__value${data.stats.pendingCommits > 5 ? ' warn' : ''}">${data.stats.pendingCommits}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Registered Games</div>
+            <div class="stat-card__value">${data.stats.registeredGames}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Chain</div>
+            <div class="stat-card__value" style="font-size:1.25rem">Base (${data.server.chain})</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Signer</div>
+            <div class="stat-card__value" style="font-size:1rem;color:var(--accent)">${data.server.signer}</div>
+          </div>
+        `;
+
+        // Contracts
+        const contractNames = {
+          channelManager: 'ChannelManager',
+          bankrollManager: 'BankrollManager',
+          insuranceFund: 'InsuranceFund',
+          relayRouter: 'RelayRouter',
+        };
+        const contractLabels = {
+          channelManager: 'Core',
+          bankrollManager: 'Risk',
+          insuranceFund: 'Treasury',
+          relayRouter: 'Privacy',
+        };
+        document.getElementById('contracts').innerHTML = Object.entries(data.contracts)
+          .filter(([, v]) => v)
+          .map(([k, v]) => `
+            <div class="contract-card">
+              <div class="contract-card__label">${contractLabels[k] || k}</div>
+              <div class="contract-card__name">${contractNames[k] || k}</div>
+              <a class="contract-card__addr" href="https://basescan.org/address/${v}" target="_blank" rel="noopener">${v}</a>
+            </div>
+          `).join('');
+
+        // Channels
+        document.getElementById('channel-count').textContent = data.channels.length;
+        if (data.channels.length === 0) {
+          document.getElementById('channels-body').innerHTML =
+            '<tr><td colspan="7" class="empty"><div class="empty__icon">📡</div>No active channels</td></tr>';
+        } else {
+          document.getElementById('channels-body').innerHTML = data.channels.map(ch => `
+            <tr>
+              <td class="mono">${ch.agent}</td>
+              <td class="mono">${ch.agentBalance} ETH</td>
+              <td class="mono">${ch.casinoBalance} ETH</td>
+              <td>${ch.nonce}</td>
+              <td>${ch.gamesPlayed}</td>
+              <td>${timeAgo(ch.openedAt)}</td>
+              <td><span class="tag ${ch.invariantOk ? 'tag--ok' : 'tag--err'}">${ch.invariantOk ? 'OK' : 'BROKEN'}</span></td>
+            </tr>
+          `).join('');
+        }
+
+        // Games
+        document.getElementById('games').innerHTML = Object.entries(data.games).map(([name, g]) => `
+          <div class="game-stat">
+            <div class="game-stat__name">${name.charAt(0).toUpperCase() + name.slice(1)}</div>
+            <div class="game-stat__row"><span>RTP</span><span>${(g.rtp * 100).toFixed(1)}%</span></div>
+            <div class="game-stat__row"><span>House Edge</span><span>${(g.houseEdge * 100).toFixed(1)}%</span></div>
+            <div class="game-stat__row"><span>Max Multiplier</span><span>${g.maxMultiplier}x</span></div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        document.getElementById('status-text').textContent = 'offline';
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

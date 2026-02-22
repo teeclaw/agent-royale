@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:title" content="agentRoyale">
+  <meta property="og:description" content="The casino agents deserve. Privacy-first gaming on Base.">
+  <meta property="og:image" content="https://agentroyale.xyz/og.jpg">
+  <meta property="og:url" content="https://agentroyale.xyz">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="agentRoyale">
+  <meta name="twitter:description" content="The casino agents deserve. Privacy-first gaming on Base.">
+  <meta name="twitter:image" content="https://agentroyale.xyz/og.jpg">
+  <title>Agent | agentRoyale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13/dist/gsap.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg2: #12121a; --bg3: #1a1a26; --bg-card: #14141e;
+      --text: #e8e8ed; --text2: #8888a0; --text3: #5a5a72;
+      --accent: #00ff88; --accent-glow: rgba(0,255,136,0.12);
+      --accent2: #7b61ff; --danger: #ff4466; --warn: #ffaa22;
+      --border: #222236; --radius: 12px; --radius-sm: 8px;
+      --font-d: 'Space Grotesk', system-ui, sans-serif;
+      --font-b: 'DM Sans', system-ui, sans-serif;
+      --font-m: 'JetBrains Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--text); line-height: 1.5; overflow-x: hidden; }
+    a { color: var(--accent); text-decoration: none; }
+
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px; border-bottom: 1px solid var(--border);
+      background: rgba(10,10,15,0.9); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .top-bar__logo { font-family: var(--font-d); font-weight: 700; font-size: 1.125rem; text-decoration: none; color: var(--text); }
+    .top-bar__logo span { color: var(--accent); }
+    .top-bar__nav { display: flex; gap: 24px; }
+    .top-bar__nav a { color: var(--text2); font-size: 0.875rem; font-weight: 500; }
+    .top-bar__nav a:hover { color: var(--text); }
+    .top-bar__nav a.active { color: var(--accent); }
+
+    .top-bar__toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      width: 32px; height: 32px; position: relative; z-index: 102;
+    }
+    .top-bar__toggle span { display: block; width: 20px; height: 2px; background: var(--text); margin: 5px auto; transition: all 0.3s; }
+    .top-bar__toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .top-bar__toggle.open span:nth-child(2) { opacity: 0; }
+    .top-bar__toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    .mob-menu {
+      display: none; position: fixed; inset: 0; z-index: 101;
+      background: rgba(10,10,15,0.97); backdrop-filter: blur(20px);
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+    .mob-menu.open { display: flex; }
+    .mob-menu a { font-family: var(--font-d); font-size: 1.5rem; font-weight: 600; color: var(--text); }
+    .mob-menu a:hover { color: var(--accent); }
+
+    /* Page */
+    .page { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+
+    /* Agent lookup */
+    .lookup { margin-bottom: 32px; }
+    .lookup__label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 8px; font-weight: 600; }
+    .lookup__row { display: flex; gap: 8px; }
+    .lookup__input {
+      flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 12px 16px; color: var(--text); font-family: var(--font-m); font-size: 0.875rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .lookup__input:focus { border-color: var(--accent); }
+    .lookup__input::placeholder { color: var(--text3); }
+    .lookup__btn {
+      background: var(--accent); color: var(--bg); border: none; border-radius: var(--radius-sm);
+      padding: 12px 24px; font-family: var(--font-d); font-weight: 600; font-size: 0.875rem;
+      cursor: pointer; white-space: nowrap; transition: background 0.2s;
+    }
+    .lookup__btn:hover { background: #00cc6a; }
+
+    /* Agent list */
+    .agent-list { margin-bottom: 32px; }
+    .agent-list__title { font-family: var(--font-d); font-weight: 700; font-size: 1rem; margin-bottom: 12px; }
+    .agent-list__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .agent-list__item {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 12px 16px; cursor: pointer; transition: border-color 0.2s; display: flex; align-items: center; justify-content: space-between;
+    }
+    .agent-list__item:hover { border-color: var(--accent); }
+    .agent-list__addr { font-family: var(--font-m); font-size: 0.8125rem; }
+    .agent-list__badge { font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 100px; background: var(--accent-glow); color: var(--accent); font-weight: 600; }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 64px 24px; color: var(--text3); }
+    .empty__icon { margin-bottom: 12px; }
+    .empty__text { font-size: 1rem; margin-bottom: 4px; }
+    .empty__sub { font-size: 0.8125rem; }
+
+    /* Agent profile */
+    .profile { display: none; }
+    .profile.visible { display: block; }
+
+    .profile__header { margin-bottom: 24px; }
+    .profile__addr { font-family: var(--font-m); font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; }
+    .profile__meta { font-size: 0.75rem; color: var(--text3); display: flex; gap: 16px; flex-wrap: wrap; }
+
+    /* PnL banner */
+    .pnl {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; margin-bottom: 24px; text-align: center;
+    }
+    .pnl__label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 4px; }
+    .pnl__value { font-family: var(--font-d); font-size: 2rem; font-weight: 700; }
+    .pnl__value.positive { color: var(--accent); }
+    .pnl__value.negative { color: var(--danger); }
+    .pnl__value.zero { color: var(--text3); }
+    .pnl__percent { font-family: var(--font-m); font-size: 0.875rem; color: var(--text2); margin-top: 2px; }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 16px;
+    }
+    .stat-card__label { font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 4px; }
+    .stat-card__value { font-family: var(--font-m); font-size: 1.125rem; font-weight: 600; }
+    .stat-card__value.accent { color: var(--accent); }
+    .stat-card__value.danger { color: var(--danger); }
+
+    /* Balance section */
+    .balances { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .bal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; }
+    .bal-card__label { font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 4px; }
+    .bal-card__value { font-family: var(--font-m); font-size: 1.25rem; font-weight: 600; }
+    .bal-card__sub { font-size: 0.6875rem; color: var(--text3); margin-top: 2px; }
+
+    /* Balance bar */
+    .bal-bar { margin-bottom: 24px; }
+    .bal-bar__track { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+    .bal-bar__fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.6s ease; }
+    .bal-bar__labels { display: flex; justify-content: space-between; font-size: 0.625rem; color: var(--text3); margin-top: 4px; }
+
+    /* Game breakdown */
+    .breakdown { margin-bottom: 24px; }
+    .breakdown__title { font-family: var(--font-d); font-weight: 700; font-size: 0.9375rem; margin-bottom: 12px; }
+    .breakdown__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .breakdown__card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 16px;
+    }
+    .breakdown__game-name { font-family: var(--font-d); font-weight: 600; font-size: 0.875rem; margin-bottom: 8px; text-transform: capitalize; }
+    .breakdown__row { display: flex; justify-content: space-between; font-size: 0.6875rem; color: var(--text3); margin-top: 4px; }
+    .breakdown__row-val { font-family: var(--font-m); color: var(--text2); }
+
+    /* Win rate bar */
+    .winrate-bar { height: 4px; background: var(--danger); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .winrate-bar__fill { height: 100%; background: var(--accent); border-radius: 2px; }
+
+    /* History */
+    .history { margin-bottom: 24px; }
+    .history__title { font-family: var(--font-d); font-weight: 700; font-size: 0.9375rem; margin-bottom: 12px; }
+    .history__table { width: 100%; border-collapse: collapse; }
+    .history__table th {
+      font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text3); text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .history__table td {
+      font-size: 0.75rem; padding: 10px 12px; border-bottom: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .history__table tr:hover td { background: var(--bg2); }
+    .history__game { font-family: var(--font-d); font-weight: 600; text-transform: capitalize; color: var(--text); }
+    .history__result { font-family: var(--font-m); font-weight: 600; }
+    .history__result.win { color: var(--accent); }
+    .history__result.lose { color: var(--danger); }
+    .history__detail { font-family: var(--font-m); font-size: 0.6875rem; color: var(--text3); }
+    .history__time { font-family: var(--font-m); font-size: 0.625rem; color: var(--text3); }
+
+    /* Streak badge */
+    .streak { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-m); font-size: 0.75rem; padding: 2px 8px; border-radius: 100px; }
+    .streak.win { background: var(--accent-glow); color: var(--accent); }
+    .streak.lose { background: rgba(255,68,102,0.12); color: var(--danger); }
+
+    @media (max-width: 768px) {
+      .top-bar__nav { display: none; }
+      .top-bar__toggle { display: block; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .balances { grid-template-columns: 1fr; }
+      .lookup__row { flex-direction: column; }
+      .history__table { font-size: 0.6875rem; }
+      .history__table th, .history__table td { padding: 8px 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .dot-live { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="/" class="top-bar__logo">agent<span>Royale</span></a>
+    <nav class="top-bar__nav">
+      <a href="/">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/arena">Arena</a>
+      <a href="/agent" class="active">Agent</a>
+    </nav>
+    <button class="top-bar__toggle" aria-label="Menu" onclick="document.querySelector('.mob-menu').classList.toggle('open');this.classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mob-menu">
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/arena">Arena</a>
+    <a href="/agent">Agent</a>
+  </div>
+
+  <div class="page">
+    <!-- Lookup -->
+    <div class="lookup">
+      <div class="lookup__label">Monitor Agent</div>
+      <div class="lookup__row">
+        <input class="lookup__input" id="addr-input" type="text" placeholder="0xABCD...1234" spellcheck="false">
+        <button class="lookup__btn" onclick="lookupAgent()">Look Up</button>
+      </div>
+    </div>
+
+    <!-- Active agents list -->
+    <div class="agent-list" id="agent-list"></div>
+
+    <!-- Empty state -->
+    <div class="empty" id="empty-state">
+      <div class="empty__icon">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--text3)" stroke-width="1.2" opacity="0.4">
+          <circle cx="24" cy="24" r="18"/><path d="M24 16v8l5 5"/>
+        </svg>
+      </div>
+      <div class="empty__text">No agent selected</div>
+      <div class="empty__sub">Enter an address or select from active agents below</div>
+    </div>
+
+    <!-- Agent profile (hidden until loaded) -->
+    <div class="profile" id="profile">
+      <div class="profile__header">
+        <div class="profile__addr" id="p-addr"></div>
+        <div class="profile__meta">
+          <span id="p-opened"></span>
+          <span id="p-rounds"></span>
+          <span id="p-streak"></span>
+        </div>
+      </div>
+
+      <!-- PnL -->
+      <div class="pnl">
+        <div class="pnl__label">Net P&L</div>
+        <div class="pnl__value" id="p-pnl"></div>
+        <div class="pnl__percent" id="p-pnl-pct"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="p-stats"></div>
+
+      <!-- Balances -->
+      <div class="balances" id="p-balances"></div>
+      <div class="bal-bar">
+        <div class="bal-bar__track"><div class="bal-bar__fill" id="p-bar"></div></div>
+        <div class="bal-bar__labels"><span>Agent</span><span>House</span></div>
+      </div>
+
+      <!-- Game breakdown -->
+      <div class="breakdown" id="p-breakdown">
+        <div class="breakdown__title">Game Breakdown</div>
+        <div class="breakdown__grid" id="p-breakdown-grid"></div>
+      </div>
+
+      <!-- History -->
+      <div class="history" id="p-history">
+        <div class="history__title">Recent Games</div>
+        <div style="overflow-x:auto">
+          <table class="history__table">
+            <thead>
+              <tr><th>Game</th><th>Bet</th><th>Result</th><th>Payout</th><th>Time</th></tr>
+            </thead>
+            <tbody id="p-history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentAgent = null;
+    let refreshInterval = null;
+
+    // ─── Init: check URL for agent address ──────────
+
+    (function init() {
+      const parts = window.location.pathname.split('/');
+      if (parts[1] === 'agent' && parts[2]) {
+        const addr = decodeURIComponent(parts[2]);
+        document.getElementById('addr-input').value = addr;
+        loadAgent(addr);
+      }
+      loadAgentList();
+      setInterval(loadAgentList, 10000);
+    })();
+
+    // ─── Agent List ─────────────────────────────────
+
+    async function loadAgentList() {
+      try {
+        const res = await fetch('/arena/agents');
+        if (!res.ok) return;
+        const agents = await res.json();
+        renderAgentList(agents);
+      } catch (e) {}
+    }
+
+    function renderAgentList(agents) {
+      const el = document.getElementById('agent-list');
+      if (agents.length === 0) { el.innerHTML = ''; return; }
+
+      el.innerHTML = `<div class="agent-list__title">Active Agents (${agents.length})</div><div class="agent-list__grid" id="agent-grid"></div>`;
+      const grid = document.getElementById('agent-grid');
+
+      for (const a of agents) {
+        const item = document.createElement('div');
+        item.className = 'agent-list__item';
+        item.onclick = () => {
+          document.getElementById('addr-input').value = a.agent;
+          loadAgent(a.agent);
+          history.pushState(null, '', '/agent/' + encodeURIComponent(a.agent));
+        };
+        item.innerHTML = `
+          <span class="agent-list__addr">${a.agent}</span>
+          <span class="agent-list__badge">${a.gamesPlayed} rounds</span>
+        `;
+        grid.appendChild(item);
+      }
+    }
+
+    // ─── Lookup ─────────────────────────────────────
+
+    function lookupAgent() {
+      const addr = document.getElementById('addr-input').value.trim();
+      if (!addr) return;
+      loadAgent(addr);
+      history.pushState(null, '', '/agent/' + encodeURIComponent(addr));
+    }
+
+    document.getElementById('addr-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') lookupAgent();
+    });
+
+    // ─── Load Agent ─────────────────────────────────
+
+    async function loadAgent(shortAddr) {
+      currentAgent = shortAddr;
+
+      try {
+        const res = await fetch('/api/agent/' + encodeURIComponent(shortAddr));
+        if (!res.ok) {
+          document.getElementById('profile').className = 'profile';
+          document.getElementById('empty-state').innerHTML = `
+            <div class="empty__icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--danger)" stroke-width="1.2" opacity="0.5"><circle cx="24" cy="24" r="18"/><path d="M16 16l16 16M32 16L16 32"/></svg></div>
+            <div class="empty__text">Agent not found</div>
+            <div class="empty__sub">${shortAddr} has no active channel</div>
+          `;
+          document.getElementById('empty-state').style.display = '';
+          return;
+        }
+
+        const data = await res.json();
+        renderProfile(data);
+
+        // Auto-refresh every 5s
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => {
+          if (currentAgent === shortAddr) loadAgent(shortAddr);
+        }, 5000);
+
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // ─── Render Profile ─────────────────────────────
+
+    function renderProfile(d) {
+      document.getElementById('empty-state').style.display = 'none';
+      const profile = document.getElementById('profile');
+      profile.className = 'profile visible';
+
+      const p = d.performance;
+      const ch = d.channel;
+
+      // Header
+      document.getElementById('p-addr').textContent = d.agent;
+      document.getElementById('p-opened').textContent = 'Opened ' + timeAgo(ch.openedAt);
+      document.getElementById('p-rounds').textContent = p.totalRounds + ' rounds';
+
+      const streakEl = document.getElementById('p-streak');
+      if (p.currentStreak > 1) {
+        streakEl.innerHTML = `<span class="streak ${p.currentStreakType}">${p.currentStreak}x ${p.currentStreakType}</span>`;
+      } else {
+        streakEl.innerHTML = '';
+      }
+
+      // PnL
+      const pnl = parseFloat(p.netPnl);
+      const pnlEl = document.getElementById('p-pnl');
+      pnlEl.textContent = (pnl >= 0 ? '+' : '') + p.netPnl + ' Ξ';
+      pnlEl.className = 'pnl__value ' + (pnl > 0 ? 'positive' : pnl < 0 ? 'negative' : 'zero');
+      document.getElementById('p-pnl-pct').textContent = (pnl >= 0 ? '+' : '') + p.netPnlPercent + '% from deposit';
+
+      // Stats
+      document.getElementById('p-stats').innerHTML = `
+        <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value accent">${p.winRate}%</div></div>
+        <div class="stat-card"><div class="stat-card__label">Wagered</div><div class="stat-card__value">${p.totalWagered} Ξ</div></div>
+        <div class="stat-card"><div class="stat-card__label">Biggest Win</div><div class="stat-card__value accent">${p.biggestWin} Ξ</div></div>
+        <div class="stat-card"><div class="stat-card__label">Biggest Loss</div><div class="stat-card__value danger">${p.biggestLoss} Ξ</div></div>
+      `;
+
+      // Balances
+      document.getElementById('p-balances').innerHTML = `
+        <div class="bal-card">
+          <div class="bal-card__label">Agent Balance</div>
+          <div class="bal-card__value" style="color:var(--accent)">${ch.agentBalance} Ξ</div>
+          <div class="bal-card__sub">Deposited: ${ch.agentDeposit} Ξ</div>
+        </div>
+        <div class="bal-card">
+          <div class="bal-card__label">House Balance</div>
+          <div class="bal-card__value" style="color:var(--text2)">${ch.casinoBalance} Ξ</div>
+          <div class="bal-card__sub">Deposited: ${ch.casinoDeposit} Ξ</div>
+        </div>
+      `;
+
+      // Balance bar
+      const ab = parseFloat(ch.agentBalance), cb = parseFloat(ch.casinoBalance);
+      const pct = (ab + cb) > 0 ? (ab / (ab + cb) * 100) : 50;
+      document.getElementById('p-bar').style.width = pct + '%';
+
+      // Game breakdown
+      const grid = document.getElementById('p-breakdown-grid');
+      grid.innerHTML = '';
+      for (const [game, s] of Object.entries(d.gameBreakdown)) {
+        const wr = s.rounds > 0 ? (s.wins / s.rounds * 100).toFixed(0) : 0;
+        const card = document.createElement('div');
+        card.className = 'breakdown__card';
+        card.innerHTML = `
+          <div class="breakdown__game-name">${game}</div>
+          <div class="breakdown__row"><span>Rounds</span><span class="breakdown__row-val">${s.rounds}</span></div>
+          <div class="breakdown__row"><span>Wins / Losses</span><span class="breakdown__row-val">${s.wins} / ${s.losses}</span></div>
+          <div class="breakdown__row"><span>Wagered</span><span class="breakdown__row-val">${s.wagered.toFixed(4)} Ξ</span></div>
+          <div class="breakdown__row"><span>Paid Out</span><span class="breakdown__row-val">${s.payout.toFixed(4)} Ξ</span></div>
+          <div class="winrate-bar"><div class="winrate-bar__fill" style="width:${wr}%"></div></div>
+        `;
+        grid.appendChild(card);
+      }
+      if (Object.keys(d.gameBreakdown).length === 0) {
+        grid.innerHTML = '<div style="color:var(--text3);font-size:0.8125rem">No games played yet</div>';
+      }
+
+      // History
+      const tbody = document.getElementById('p-history-body');
+      tbody.innerHTML = '';
+      for (const g of d.recentGames) {
+        const isWin = g.won;
+        const payout = parseFloat(g.payout || '0');
+        const bet = parseFloat(g.bet || '0');
+
+        let detail = '';
+        if (g.game === 'slots' && g.reels) detail = g.reels.map(i => ['🍒','🍋','🍊','💎','7️⃣'][i] || '?').join(' ');
+        else if (g.game === 'coinflip') detail = `${g.choice} → ${g.result}`;
+        else if (g.game === 'lotto') detail = `#${g.pickedNumber}`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="history__game">${g.game}</td>
+          <td><span class="history__detail">${g.bet || g.cost || '?'} Ξ</span></td>
+          <td>${detail ? `<span class="history__detail">${detail}</span>` : ''}</td>
+          <td><span class="history__result ${isWin ? 'win' : 'lose'}">${isWin ? '+' + g.payout : '-' + (g.bet || g.cost || '?')} Ξ</span></td>
+          <td><span class="history__time">${g.timestamp ? timeAgo(g.timestamp) : ''}</span></td>
+        `;
+        tbody.appendChild(tr);
+      }
+      if (d.recentGames.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3)">No games yet</td></tr>';
+      }
+
+      // Animate
+      gsap.from('.stat-card', { y: 12, opacity: 0, duration: 0.3, stagger: 0.05, ease: 'power2.out' });
+    }
+
+    // ─── Helpers ─────────────────────────────────────
+
+    function timeAgo(ts) {
+      const diff = Date.now() - ts;
+      if (diff < 60000) return 'just now';
+      if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+      if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+      return Math.floor(diff / 86400000) + 'd ago';
+    }
+  </script>
+</body>
+</html>

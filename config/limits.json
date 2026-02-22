@@ -1,0 +1,22 @@
+{
+  "channel": {
+    "minDepositEth": "0.001",
+    "maxDepositEth": "10",
+    "minDurationMs": 3600000,
+    "challengePeriodMs": 86400000
+  },
+  "slots": {
+    "minBetEth": "0.0001",
+    "maxBetMultiplier": 290,
+    "safetyMargin": 2
+  },
+  "lotto": {
+    "maxTicketsPerAgentPerDraw": 10
+  },
+  "bankroll": {
+    "maxCasinoExposureEth": "50",
+    "collateralPerChannelEth": "0.1",
+    "insuranceBps": 1000,
+    "bankrollAlertThreshold": 2
+  }
+}
