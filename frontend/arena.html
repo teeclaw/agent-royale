@@ -284,6 +284,7 @@
     let rounds = 0, wins = 0, house = 0;
     let feedCleared = false;
     const agentCards = new Map(); // agent short addr -> DOM element
+    const lastAnimatedNonce = new Map();
 
     // ─── Game Stats ─────────────────────────────────
 
@@ -499,19 +500,25 @@
         const gstat = document.getElementById(`gstat-${gameName}`);
         if (gstat) { gstat.classList.add('active'); setTimeout(() => gstat.classList.remove('active'), 1500); }
 
-        // Animate agent card
+        // Animate agent card only on fresh nonce to avoid replay jitter
         const card = agentCards.get(agent);
         if (card) {
-          card.classList.add('playing');
-          setTimeout(() => card.classList.remove('playing'), 2000);
+          const nonce = Number(result?.nonce ?? -1);
+          const prevNonce = Number(lastAnimatedNonce.get(agent) ?? -1);
+          const isFreshRound = nonce > prevNonce;
 
-          // Build a game-like object from SSE result
+          // Build a game-like object from result
           const gameObj = { ...result, game: gameName };
           renderAgentGame(card, gameObj);
 
-          // Animate
-          const display = card.querySelector('[data-field="game-display"]');
-          gsap.from(display.children, { scale: 0.8, opacity: 0, duration: 0.3, stagger: 0.05, ease: 'back.out(1.4)' });
+          if (isFreshRound) {
+            card.classList.add('playing');
+            setTimeout(() => card.classList.remove('playing'), 2000);
+
+            const display = card.querySelector('[data-field="game-display"]');
+            gsap.from(display.children, { scale: 0.8, opacity: 0, duration: 0.28, stagger: 0.04, ease: 'back.out(1.3)' });
+            lastAnimatedNonce.set(agent, nonce);
+          }
 
           // Update balances if present
           if (result.agentBalance) card.querySelector('[data-field="agent-bal"]').textContent = result.agentBalance + ' Ξ';
@@ -578,6 +585,7 @@
     // ─── SSE ────────────────────────────────────────
 
     let recentCursor = new Set();
+    let recentPrimed = false;
 
     async function pollRecent() {
       try {
@@ -588,6 +596,16 @@
         document.getElementById('live-dot').className = 'dot-live';
         document.getElementById('live-text').textContent = 'live';
         document.getElementById('live-text').style.color = 'var(--accent)';
+
+        // First sync: prime cursor only, skip animating historical backlog.
+        if (!recentPrimed) {
+          for (const ev of (events || [])) {
+            const id = `${ev.ts || 0}:${ev.type || ''}:${ev.action || ''}:${ev.agent || ''}`;
+            recentCursor.add(id);
+          }
+          recentPrimed = true;
+          return;
+        }
 
         for (const ev of (events || []).slice().reverse()) {
           const id = `${ev.ts || 0}:${ev.type || ''}:${ev.action || ''}:${ev.agent || ''}`;
