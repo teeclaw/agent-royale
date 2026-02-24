@@ -314,7 +314,7 @@
 
     async function loadAgentList() {
       try {
-        const res = await fetch('https://api.agentroyale.xyz/arena/agents');
+        const res = await fetch('/api/arena/agents');
         if (!res.ok) return;
         const agents = await res.json();
         renderAgentList(agents);
@@ -363,7 +363,7 @@
       currentAgent = shortAddr;
 
       try {
-        const res = await fetch('https://api.agentroyale.xyz/api/agent/' + encodeURIComponent(shortAddr));
+        const res = await fetch('/api/agent/' + encodeURIComponent(shortAddr));
         if (!res.ok) {
           document.getElementById('profile').className = 'profile';
           document.getElementById('empty-state').innerHTML = `

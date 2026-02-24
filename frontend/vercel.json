@@ -1,16 +1,6 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://api.agentroyale.xyz/:path*" },
-
-    { "source": "/health", "destination": "/api/health" },
-    { "source": "/a2a/casino", "destination": "/api/a2a/casino" },
-    { "source": "/casino/:path*", "destination": "/api/casino/:path*" },
-    { "source": "/dashboard/state", "destination": "/api/dashboard/state" },
-    { "source": "/arena/events", "destination": "/api/arena/events" },
-    { "source": "/arena/recent", "destination": "/api/arena/recent" },
-    { "source": "/arena/agents", "destination": "/api/arena/agents" },
-
     { "source": "/", "destination": "/index.html" },
     { "source": "/arena", "destination": "/arena.html" },
     { "source": "/agent", "destination": "/agent.html" },

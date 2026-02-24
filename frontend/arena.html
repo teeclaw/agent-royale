@@ -289,7 +289,7 @@
 
     async function loadGameStats() {
       try {
-        const res = await fetch('https://api.agentroyale.xyz/casino/stats');
+        const res = await fetch('/api/casino/stats');
         if (!res.ok) return;
         renderGameStats(await res.json());
       } catch (e) {}
@@ -350,7 +350,7 @@
 
     async function loadAgents() {
       try {
-        const res = await fetch('https://api.agentroyale.xyz/arena/agents');
+        const res = await fetch('/api/arena/agents');
         if (!res.ok) return;
         const agents = await res.json();
         renderAgents(agents);
@@ -581,7 +581,7 @@
 
     async function pollRecent() {
       try {
-        const res = await fetch('https://api.agentroyale.xyz/arena/recent');
+        const res = await fetch('/api/arena/recent');
         if (!res.ok) throw new Error('recent unavailable');
         const events = await res.json();
 
@@ -609,7 +609,7 @@
     }
 
     function connectSSE() {
-      const es = new EventSource('https://api.agentroyale.xyz/arena/events');
+      const es = new EventSource('/api/arena/events');
 
       es.addEventListener('connected', () => {
         document.getElementById('live-dot').className = 'dot-live';
