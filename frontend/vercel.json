@@ -1,6 +1,8 @@
 {
   "version": 2,
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://api.agentroyale.xyz/:path*" },
+
     { "source": "/health", "destination": "/api/health" },
     { "source": "/a2a/casino", "destination": "/api/a2a/casino" },
     { "source": "/casino/:path*", "destination": "/api/casino/:path*" },
