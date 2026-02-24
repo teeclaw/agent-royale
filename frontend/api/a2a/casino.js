@@ -1,8 +1,94 @@
 const crypto = require('crypto');
+const { ethers } = require('ethers');
 const { rest, hasConfig } = require('../_supabase');
 
 const CASINO_NAME = 'AgentCasino';
 const COMMIT_TTL_MS = 5 * 60 * 1000;
+const DEFAULT_SETTLEMENT_MODE = process.env.DEFAULT_SETTLEMENT_MODE || 'offchain-ledger';
+
+let _chain = null;
+function getChain() {
+  if (_chain) return _chain;
+  const rpc = process.env.ONCHAIN_RPC_URL || process.env.BASE_RPC_URL;
+  const cm = process.env.CHANNEL_MANAGER;
+  const casinoPk = process.env.CASINO_PRIVATE_KEY;
+  const agentPk = process.env.ONCHAIN_TEST_AGENT_PRIVATE_KEY || process.env.AGENT_TEST_PRIVATE_KEY;
+  if (!rpc || !cm || !casinoPk || !agentPk) {
+    throw new Error('Onchain settlement env missing (ONCHAIN_RPC_URL/BASE_RPC_URL, CHANNEL_MANAGER, CASINO_PRIVATE_KEY, ONCHAIN_TEST_AGENT_PRIVATE_KEY)');
+  }
+  const provider = new ethers.JsonRpcProvider(rpc);
+  const casino = new ethers.Wallet(casinoPk, provider);
+  const agent = new ethers.Wallet(agentPk, provider);
+  const abi = require('../../../artifacts/contracts/ChannelManager.sol/ChannelManager.json').abi;
+  const cmc = new ethers.Contract(cm, abi, provider);
+  _chain = { provider, casino, agent, cmc, cm };
+  return _chain;
+}
+
+async function recordSettlementTx(agent, action, txHash, chainId, status = 'submitted', blockNumber = null, error = null) {
+  await rest('casino_settlement_txs', {
+    method: 'POST',
+    body: [{ agent, action, tx_hash: txHash, chain_id: chainId, status, block_number: blockNumber, error, updated_at: nowIso() }],
+  }).catch(() => {});
+}
+
+async function onchainOpenAndFund(agentAddr, agentDepositEth, casinoDepositEth) {
+  const { provider, casino, agent, cmc } = getChain();
+  const network = await provider.getNetwork();
+  const chainId = Number(network.chainId);
+
+  // Open channel from agent signer
+  const openTx = await cmc.connect(agent).openChannel({ value: ethers.parseEther(String(agentDepositEth)) });
+  const openRcpt = await openTx.wait();
+  await recordSettlementTx(agentAddr, 'open', openTx.hash, chainId, 'mined', openRcpt?.blockNumber || null);
+
+  // Fund casino side from casino signer
+  const fundTx = await cmc.connect(casino).fundCasinoSide(agent.address, { value: ethers.parseEther(String(casinoDepositEth)) });
+  const fundRcpt = await fundTx.wait();
+  await recordSettlementTx(agentAddr, 'fund', fundTx.hash, chainId, 'mined', fundRcpt?.blockNumber || null);
+
+  return {
+    chainId,
+    openTxHash: openTx.hash,
+    fundTxHash: fundTx.hash,
+    openBlock: openRcpt?.blockNumber || null,
+    fundBlock: fundRcpt?.blockNumber || null,
+    onchainAgent: agent.address,
+  };
+}
+
+async function onchainClose(agentAddr, agentBalanceEth, casinoBalanceEth, nonce) {
+  const { provider, casino, agent, cmc, cm } = getChain();
+  const network = await provider.getNetwork();
+  const chainId = Number(network.chainId);
+
+  const domain = { name: 'AgentCasino', version: '1', chainId, verifyingContract: cm };
+  const types = {
+    ChannelState: [
+      { name: 'agent', type: 'address' },
+      { name: 'agentBalance', type: 'uint256' },
+      { name: 'casinoBalance', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+    ],
+  };
+  const value = {
+    agent: agent.address,
+    agentBalance: ethers.parseEther(String(agentBalanceEth)),
+    casinoBalance: ethers.parseEther(String(casinoBalanceEth)),
+    nonce: BigInt(nonce),
+  };
+  const casinoSig = await casino.signTypedData(domain, types, value);
+
+  const tx = await cmc.connect(agent).closeChannel(
+    ethers.parseEther(String(agentBalanceEth)),
+    ethers.parseEther(String(casinoBalanceEth)),
+    BigInt(nonce),
+    casinoSig
+  );
+  const rcpt = await tx.wait();
+  await recordSettlementTx(agentAddr, 'close', tx.hash, chainId, 'mined', rcpt?.blockNumber || null);
+  return { chainId, closeTxHash: tx.hash, closeBlock: rcpt?.blockNumber || null, casinoSig, onchainAgent: agent.address };
+}
 
 function reply(res, content, status = 200) {
   return res.status(status).json({
@@ -37,8 +123,19 @@ function randHex(bytes = 32) {
 function nowIso() { return new Date().toISOString(); }
 
 async function getOpenChannel(agent) {
-  const rows = await rest(`casino_channels?select=*&agent=eq.${encodeURIComponent(agent)}&status=eq.open&limit=1`);
-  return rows?.[0] || null;
+  let rows = await rest(`casino_channels?select=*&agent=eq.${encodeURIComponent(agent)}&status=eq.open&limit=1`).catch(() => []);
+  if (rows?.[0]) return rows[0];
+
+  // Fallback for onchain-settle mode where canonical agent is the onchain signer address
+  try {
+    const onchainAgent = getChain().agent.address;
+    if (onchainAgent && onchainAgent.toLowerCase() !== String(agent).toLowerCase()) {
+      rows = await rest(`casino_channels?select=*&agent=eq.${encodeURIComponent(onchainAgent)}&status=eq.open&limit=1`).catch(() => []);
+      if (rows?.[0]) return rows[0];
+    }
+  } catch {}
+
+  return null;
 }
 
 async function updateChannel(id, patch) {
@@ -187,29 +284,59 @@ module.exports = async (req, res) => {
       const existing = await getOpenChannel(agent);
       if (existing) return err(res, 'Channel already exists', 409, 'CHANNEL_ALREADY_EXISTS');
 
+      const settlementMode = content.settlementMode || content.mode || DEFAULT_SETTLEMENT_MODE;
       const agentDeposit = toNum(content.agentDeposit, toNum(content.params?.agentDeposit, 0));
       const casinoDeposit = toNum(content.casinoDeposit, toNum(content.params?.casinoDeposit, agentDeposit));
       if (agentDeposit < 0.001 || casinoDeposit <= 0) return err(res, 'Min deposit: 0.001 ETH', 400, 'INVALID_DEPOSIT');
 
-      await rest('casino_channels', {
-        method: 'POST',
-        body: [{
-          agent,
-          status: 'open',
-          agent_deposit: agentDeposit,
-          casino_deposit: casinoDeposit,
-          agent_balance: agentDeposit,
-          casino_balance: casinoDeposit,
-          nonce: 0,
-          games_played: 0,
-          opened_at: nowIso(),
-          updated_at: nowIso(),
-        }],
-      });
+      let onchain = { chainId: 8453, openTxHash: null, fundTxHash: null, openBlock: null, fundBlock: null, onchainAgent: null };
+      if (settlementMode === 'onchain-settle') {
+        onchain = await onchainOpenAndFund(agent, agentDeposit, casinoDeposit);
+      }
 
-      const response = { status: 'open', agentBalance: String(agentDeposit), casinoBalance: String(casinoDeposit) };
-      await insertEvent('channel', 'open', shortAddr(agent), response);
-      await putStoredRequest(idemKey, action, agent, response);
+      const canonicalAgent = onchain.onchainAgent || agent;
+
+      const baseRow = {
+        agent: canonicalAgent,
+        status: 'open',
+        agent_deposit: agentDeposit,
+        casino_deposit: casinoDeposit,
+        agent_balance: agentDeposit,
+        casino_balance: casinoDeposit,
+        nonce: 0,
+        games_played: 0,
+        opened_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      const extendedRow = {
+        ...baseRow,
+        settlement_mode: settlementMode,
+        chain_id: onchain.chainId,
+        open_tx_hash: onchain.openTxHash,
+        fund_tx_hash: onchain.fundTxHash,
+        open_block: onchain.openBlock,
+        fund_block: onchain.fundBlock,
+        settled_onchain: settlementMode === 'onchain-settle',
+      };
+
+      try {
+        await rest('casino_channels', { method: 'POST', body: [extendedRow] });
+      } catch (e) {
+        await rest('casino_channels', { method: 'POST', body: [baseRow] });
+      }
+
+      const response = {
+        status: 'open',
+        settlementMode,
+        chainId: onchain.chainId,
+        openTxHash: onchain.openTxHash,
+        fundTxHash: onchain.fundTxHash,
+        onchainAgent: onchain.onchainAgent,
+        agentBalance: String(agentDeposit),
+        casinoBalance: String(casinoDeposit),
+      };
+      await insertEvent('channel', 'open', shortAddr(canonicalAgent), response);
+      await putStoredRequest(idemKey, action, canonicalAgent, response);
       return reply(res, response);
     }
 
@@ -218,6 +345,10 @@ module.exports = async (req, res) => {
       if (!ch) return err(res, 'Channel not found', 404, 'CHANNEL_NOT_FOUND');
       return reply(res, {
         status: 'open',
+        settlementMode: ch.settlement_mode || 'offchain-ledger',
+        chainId: ch.chain_id || 8453,
+        openTxHash: ch.open_tx_hash || null,
+        fundTxHash: ch.fund_tx_hash || null,
         agentBalance: String(ch.agent_balance),
         casinoBalance: String(ch.casino_balance),
         nonce: Number(ch.nonce || 0),
@@ -229,12 +360,34 @@ module.exports = async (req, res) => {
       const ch = await getOpenChannel(agent);
       if (!ch) return err(res, 'Channel not found', 404, 'CHANNEL_NOT_FOUND');
 
-      await updateChannel(ch.id, { status: 'closed' });
+      const settlementMode = ch.settlement_mode || DEFAULT_SETTLEMENT_MODE;
+      let closeTx = { closeTxHash: null, closeBlock: null, chainId: ch.chain_id || 8453, casinoSig: null, onchainAgent: null };
+      if (settlementMode === 'onchain-settle') {
+        closeTx = await onchainClose(agent, ch.agent_balance, ch.casino_balance, Number(ch.nonce || 0));
+      }
+
+      try {
+        await updateChannel(ch.id, {
+          status: 'closed',
+          close_tx_hash: closeTx.closeTxHash,
+          close_block: closeTx.closeBlock,
+          settled_onchain: settlementMode === 'onchain-settle',
+        });
+      } catch {
+        await updateChannel(ch.id, { status: 'closed' });
+      }
+
       const response = {
+        settlementMode,
+        settledOnchain: settlementMode === 'onchain-settle',
+        chainId: closeTx.chainId,
+        closeTxHash: closeTx.closeTxHash,
+        closeBlock: closeTx.closeBlock,
+        onchainAgent: closeTx.onchainAgent,
         agentBalance: String(ch.agent_balance),
         casinoBalance: String(ch.casino_balance),
         nonce: Number(ch.nonce || 0),
-        signature: 'vercel-supabase-phase2',
+        signature: closeTx.casinoSig || 'vercel-supabase-phase2',
         totalGames: Number(ch.games_played || 0),
       };
       await insertEvent('channel', 'close', shortAddr(agent), response);
