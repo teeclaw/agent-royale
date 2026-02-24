@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "https://api-origin.agentroyale.xyz/$1" }
+  ]
+}
