@@ -6,6 +6,11 @@ const CASINO_NAME = 'AgentCasino';
 const COMMIT_TTL_MS = 5 * 60 * 1000;
 const DEFAULT_SETTLEMENT_MODE = process.env.DEFAULT_SETTLEMENT_MODE || 'onchain-settle';
 
+const CHANNEL_MANAGER_ABI = [
+  'function channels(address) view returns (uint256 agentDeposit, uint256 casinoDeposit, uint256 agentBalance, uint256 casinoBalance, uint256 nonce, bytes32 openingBlockHash, uint256 openingBlockNumber, uint8 state)',
+  'function fundCasinoSide(address agent) payable',
+];
+
 let _chain = null;
 function getChain() {
   if (_chain) return _chain;
@@ -17,8 +22,7 @@ function getChain() {
   }
   const provider = new ethers.JsonRpcProvider(rpc);
   const casino = new ethers.Wallet(casinoPk, provider);
-  const abi = require('../../../artifacts/contracts/ChannelManager.sol/ChannelManager.json').abi;
-  const cmc = new ethers.Contract(cm, abi, provider);
+  const cmc = new ethers.Contract(cm, CHANNEL_MANAGER_ABI, provider);
   _chain = { provider, casino, cmc, cm };
   return _chain;
 }
