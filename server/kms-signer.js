@@ -37,6 +37,9 @@ function parseServiceAccountEnv() {
       : Buffer.from(raw.trim(), 'base64').toString('utf8');
     const parsed = JSON.parse(json);
     if (!parsed.client_email || !parsed.private_key) return null;
+    if (typeof parsed.private_key === 'string') {
+      parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+    }
     return parsed;
   } catch {
     return null;
