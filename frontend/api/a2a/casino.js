@@ -128,12 +128,24 @@ async function getOpenChannel(agent) {
 }
 
 async function updateChannel(id, patch) {
-  const rows = await rest(`casino_channels?id=eq.${id}`, {
-    method: 'PATCH',
-    body: { ...patch, updated_at: nowIso() },
-    prefer: 'return=representation',
-  });
-  return rows?.[0] || null;
+  try {
+    const rows = await rest(`casino_channels?id=eq.${id}`, {
+      method: 'PATCH',
+      body: { ...patch, updated_at: nowIso() },
+      prefer: 'return=representation',
+    });
+    return rows?.[0] || null;
+  } catch (e) {
+    if (String(e.message || '').includes("updated_at")) {
+      const rows = await rest(`casino_channels?id=eq.${id}`, {
+        method: 'PATCH',
+        body: { ...patch },
+        prefer: 'return=representation',
+      });
+      return rows?.[0] || null;
+    }
+    throw e;
+  }
 }
 
 async function insertEvent(type, action, agent, result) {
@@ -296,7 +308,6 @@ module.exports = async (req, res) => {
         nonce: 0,
         games_played: 0,
         opened_at: nowIso(),
-        updated_at: nowIso(),
       };
       const extendedRow = {
         ...baseRow,
