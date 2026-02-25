@@ -43,6 +43,7 @@
     }
     .top-bar__logo { font-family: var(--font-d); font-weight: 700; font-size: 1.125rem; text-decoration: none; color: var(--text); }
     .top-bar__logo span { color: var(--accent); }
+    .top-bar__brand { display:flex; align-items:center; gap:12px; }
     .top-bar__nav { display: flex; gap: 24px; }
     .top-bar__nav a { color: var(--text2); font-size: 0.875rem; font-weight: 500; }
     .top-bar__nav a:hover { color: var(--text); }
@@ -212,17 +213,19 @@
 </head>
 <body>
   <div class="top-bar">
-    <a href="/" class="top-bar__logo">agent<span>Royale</span></a>
+    <div class="top-bar__brand">
+      <a href="/" class="top-bar__logo">agent<span>Royale</span></a>
+      <div class="top-bar__live">
+        <span id="live-dot" class="dot-off"></span>
+        <span id="live-text" style="color:var(--text3)">connecting</span>
+      </div>
+    </div>
     <nav class="top-bar__nav">
       <a href="/">Home</a>
       <a href="/dashboard">Dashboard</a>
       <a href="/arena" class="active">Arena</a>
       <a href="/agent">Agent</a>
     </nav>
-    <div class="top-bar__live">
-      <span id="live-dot" class="dot-off"></span>
-      <span id="live-text" style="color:var(--text3)">connecting</span>
-    </div>
     <button class="top-bar__toggle" aria-label="Menu" onclick="document.querySelector('.mob-menu').classList.toggle('open');this.classList.toggle('open')">
       <span></span><span></span><span></span>
     </button>

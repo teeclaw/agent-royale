@@ -45,6 +45,10 @@
     .top-bar__nav a { color: var(--text2); font-size: 0.875rem; font-weight: 500; }
     .top-bar__nav a:hover { color: var(--text); }
     .top-bar__nav a.active { color: var(--accent); }
+    .top-bar__brand { display:flex; align-items:center; gap:12px; }
+    .top-bar__status { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--text2); }
+    .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
     .top-bar__toggle {
       display: none; background: none; border: none; cursor: pointer;
@@ -202,7 +206,13 @@
 </head>
 <body>
   <div class="top-bar">
-    <a href="/" class="top-bar__logo">agent<span>Royale</span></a>
+    <div class="top-bar__brand">
+      <a href="/" class="top-bar__logo">agent<span>Royale</span></a>
+      <div class="top-bar__status">
+        <span class="dot-live"></span>
+        <span>live</span>
+      </div>
+    </div>
     <nav class="top-bar__nav">
       <a href="/">Home</a>
       <a href="/dashboard">Dashboard</a>

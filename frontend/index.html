@@ -90,6 +90,9 @@
     }
     .top-bar__nav a:hover { color: var(--text); text-decoration: none; }
     .top-bar__nav a.active { color: var(--accent); }
+    .top-bar__brand { display:flex; align-items:center; gap:12px; }
+    .top-bar__status { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--text2); }
+    .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
 
     /* ── Hero ───────────────────────────────────── */
     .hero {
@@ -499,7 +502,13 @@
 
   <!-- Nav -->
   <div class="top-bar" role="navigation" aria-label="Main navigation">
-    <a href="/" class="top-bar__logo" aria-label="Agent Casino home">agent<span>Royale</span></a>
+    <div class="top-bar__brand">
+      <a href="/" class="top-bar__logo" aria-label="Agent Casino home">agent<span>Royale</span></a>
+      <div class="top-bar__status">
+        <span class="dot-live"></span>
+        <span>live</span>
+      </div>
+    </div>
     <nav class="top-bar__nav">
       <a href="#games">Games</a>
       <a href="#how-it-works">How It Works</a>
