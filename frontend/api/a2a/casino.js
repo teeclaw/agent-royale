@@ -313,6 +313,9 @@ module.exports = async (req, res) => {
     return reply(res, {
       name: 'Agent Royale',
       mode: 'vercel-supabase-phase2',
+      rngProvider: (process.env.RNG_PROVIDER || 'commit-reveal'),
+      entropyCoinflip: process.env.ENTROPY_COINFLIP || null,
+      entropyCallbackGasLimit: Number(process.env.ENTROPY_CALLBACK_GAS_LIMIT || 120000),
       privacy: 'Stealth addresses + state updates in Supabase',
       actions: ['open_channel','close_channel','channel_status','slots_commit','slots_reveal','coinflip_commit','coinflip_reveal','coinflip_entropy_commit','coinflip_entropy_status','coinflip_entropy_finalize','lotto_buy','lotto_status','info','stats'],
     });
@@ -442,11 +445,8 @@ module.exports = async (req, res) => {
 
       let sequenceNumber = null;
       try {
-        const parsed = (rcpt.logs || [])
-          .map((l) => { try { return ec.interface.parseLog(l); } catch { return null; } })
-          .filter(Boolean)
-          .find((e) => e.name === 'EntropyRequested');
-        sequenceNumber = parsed ? Number(parsed.args.sequenceNumber) : null;
+        const onchainRound = await ec.getRound(roundId);
+        sequenceNumber = Number(onchainRound.sequenceNumber || onchainRound[3] || 0) || null;
       } catch (_) {}
 
       await insertEntropyRound({
@@ -486,15 +486,24 @@ module.exports = async (req, res) => {
       const onchain = await ec.getRound(row.round_id);
       const state = Number(onchain.state);
       const fulfilled = state >= 2;
+      const ttlMs = Number(process.env.ENTROPY_ROUND_TTL_MS || 300000);
+      const createdMs = row.created_at ? new Date(row.created_at).getTime() : Date.now();
+      const expired = !fulfilled && Date.now() - createdMs > ttlMs;
+
+      if (expired) {
+        await updateEntropyRound(row.round_id, { state: 'expired' });
+        await ec.markExpired(row.round_id).catch(() => {});
+      }
 
       return reply(res, {
         roundId: row.round_id,
         requestId: row.request_id,
         requestTxHash: row.request_tx_hash,
-        state: fulfilled ? 'entropy_fulfilled' : 'entropy_requested',
+        state: fulfilled ? 'entropy_fulfilled' : (expired ? 'expired' : 'entropy_requested'),
         entropyRandom: fulfilled ? onchain.entropyRandom : null,
         choice: row.choice,
         betAmount: String(row.bet_amount),
+        retryAfterSec: fulfilled ? 0 : 10,
       });
     }
 
@@ -511,7 +520,16 @@ module.exports = async (req, res) => {
       const { ec } = getEntropyChain();
       const onchain = await ec.getRound(row.round_id);
       const state = Number(onchain.state);
-      if (state < 2) return err(res, 'Entropy not ready', 409, 'ENTROPY_NOT_READY');
+      if (state < 2) {
+        const ttlMs = Number(process.env.ENTROPY_ROUND_TTL_MS || 300000);
+        const createdMs = row.created_at ? new Date(row.created_at).getTime() : Date.now();
+        if (Date.now() - createdMs > ttlMs) {
+          await updateEntropyRound(row.round_id, { state: 'expired' });
+          await ec.markExpired(row.round_id).catch(() => {});
+          return err(res, 'Entropy round expired before callback fulfillment', 409, 'ENTROPY_EXPIRED');
+        }
+        return err(res, 'Entropy not ready', 409, 'ENTROPY_NOT_READY');
+      }
 
       const randomHex = onchain.entropyRandom;
       const resultBit = Number(BigInt(randomHex) % 2n);
@@ -547,17 +565,19 @@ module.exports = async (req, res) => {
       });
       await upsertGameStats('coinflip', bet, payout, 1);
 
+      const onchainRequestId = Number(onchain.sequenceNumber || onchain[3] || 0) || null;
       await updateEntropyRound(row.round_id, {
         state: 'settled',
         won,
         payout,
+        request_id: onchainRequestId ? String(onchainRequestId) : (row.request_id || null),
         entropy_value: randomHex,
       });
       await ec.markSettled(row.round_id).catch(() => {});
 
       const response = {
         roundId: row.round_id,
-        requestId: row.request_id,
+        requestId: onchainRequestId ? String(onchainRequestId) : row.request_id,
         requestTxHash: row.request_tx_hash,
         provider: 'pyth_entropy',
         choice: row.choice,

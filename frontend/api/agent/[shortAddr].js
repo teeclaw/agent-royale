@@ -21,6 +21,10 @@ module.exports = async (req, res) => {
       `casino_rounds?select=game,bet,payout,won,multiplier,reels,choice,result,picked_number,nonce,timestamp,draw_id,ticket_count&agent=eq.${fullAddr}&order=timestamp.desc&limit=200`
     ).catch(() => []);
 
+    const entropyProofs = await rest(
+      `casino_entropy_rounds?select=round_id,request_id,request_tx_hash,fulfill_tx_hash,entropy_value,state,created_at,updated_at&agent=eq.${fullAddr}&order=created_at.desc&limit=50`
+    ).catch(() => []);
+
     let totalWagered = 0;
     let totalPayout = 0;
     let agentWins = 0;
@@ -78,6 +82,16 @@ module.exports = async (req, res) => {
         pickedNumber: g.picked_number,
         nonce: g.nonce,
         timestamp: g.timestamp ? new Date(g.timestamp).getTime() : Date.now(),
+      })),
+      entropyProofs: entropyProofs.map((p) => ({
+        roundId: p.round_id,
+        requestId: p.request_id,
+        requestTxHash: p.request_tx_hash,
+        fulfillTxHash: p.fulfill_tx_hash,
+        randomValue: p.entropy_value,
+        state: p.state,
+        createdAt: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
+        updatedAt: p.updated_at ? new Date(p.updated_at).getTime() : null,
       })),
     });
   } catch (err) {

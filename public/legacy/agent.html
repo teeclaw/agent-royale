@@ -187,6 +187,13 @@
     .history__detail { font-family: var(--font-m); font-size: 0.6875rem; color: var(--text3); }
     .history__time { font-family: var(--font-m); font-size: 0.625rem; color: var(--text3); }
 
+    .proofs { margin-bottom: 24px; }
+    .proofs__title { font-family: var(--font-d); font-weight: 700; font-size: 0.9375rem; margin-bottom: 12px; }
+    .proofs__list { display: grid; gap: 8px; }
+    .proofs__item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+    .proofs__row { display:flex; justify-content:space-between; gap:10px; font-size:0.6875rem; color:var(--text3); }
+    .proofs__val { font-family: var(--font-m); color: var(--text2); word-break: break-all; }
+
     /* Streak badge */
     .streak { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-m); font-size: 0.75rem; padding: 2px 8px; border-radius: 100px; }
     .streak.win { background: var(--accent-glow); color: var(--accent); }
@@ -299,6 +306,11 @@
             <tbody id="p-history-body"></tbody>
           </table>
         </div>
+      </div>
+
+      <div class="proofs" id="p-proofs">
+        <div class="proofs__title">Entropy Proofs</div>
+        <div class="proofs__list" id="p-proofs-list"></div>
       </div>
     </div>
   </div>
@@ -501,6 +513,25 @@
       }
       if (d.recentGames.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3)">No games yet</td></tr>';
+      }
+
+      const proofList = document.getElementById('p-proofs-list');
+      proofList.innerHTML = '';
+      const proofs = d.entropyProofs || [];
+      for (const p of proofs.slice(0, 8)) {
+        const div = document.createElement('div');
+        div.className = 'proofs__item';
+        const shortRand = p.randomValue ? `${p.randomValue.slice(0, 10)}...${p.randomValue.slice(-8)}` : '-';
+        div.innerHTML = `
+          <div class="proofs__row"><span>Round</span><span class="proofs__val">${p.roundId || '-'}</span></div>
+          <div class="proofs__row"><span>State</span><span class="proofs__val">${p.state || '-'}</span></div>
+          <div class="proofs__row"><span>Request Tx</span><span class="proofs__val">${p.requestTxHash ? `<a href="https://basescan.org/tx/${p.requestTxHash}" target="_blank" rel="noopener">${p.requestTxHash.slice(0, 12)}...${p.requestTxHash.slice(-8)}</a>` : '-'}</span></div>
+          <div class="proofs__row"><span>Random</span><span class="proofs__val">${shortRand}</span></div>
+        `;
+        proofList.appendChild(div);
+      }
+      if (proofs.length === 0) {
+        proofList.innerHTML = '<div style="color:var(--text3);font-size:0.8125rem">No entropy proofs yet</div>';
       }
 
       // Animate

@@ -576,11 +576,16 @@
 
       const item = document.createElement('div');
       item.className = 'feed__item';
+      const proofHtml = result?.proof
+        ? `<div class="feed__detail">Entropy proof · ${result.proof.derivedResult || '-'} · <a href="https://basescan.org/tx/${result.proof.requestTxHash}" target="_blank" rel="noopener">tx</a></div>`
+        : '';
+
       item.innerHTML = `
         <div class="feed__time">${new Date().toLocaleTimeString()}</div>
         <div class="feed__game">${gameName}</div>
         <div class="feed__agent">${agent || 'system'}</div>
         ${result?.payout !== undefined ? `<div class="feed__payout ${isWin ? 'win' : 'lose'}">${isWin ? '+' : ''}${result.payout} Ξ</div>` : ''}
+        ${proofHtml}
       `;
       list.prepend(item);
       requestAnimationFrame(() => item.classList.add('entered'));
