@@ -86,8 +86,8 @@
     .proof-strip {
       display: flex;
       justify-content: flex-end;
-      padding: 6px 24px 8px;
-      border-bottom: none;
+      padding: 4px 24px 6px;
+      border: none;
       background: transparent;
       backdrop-filter: none;
       position: sticky;
@@ -102,16 +102,23 @@
       border: none;
       border-radius: 0;
       background: transparent;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--text3);
       white-space: nowrap;
+      font-weight: 300;
     }
-    .proof-strip__label { text-transform: uppercase; letter-spacing: 0.05em; }
+    .proof-strip__label {
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 300;
+      color: var(--text3);
+    }
     .proof-strip__inner a {
-      font-family: var(--font-m);
+      font-family: var(--font-b);
+      font-weight: 300;
       color: var(--accent);
       text-decoration: none;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
     }
     .proof-strip__inner a:hover { text-decoration: underline; }
     .top-bar__nav a {
