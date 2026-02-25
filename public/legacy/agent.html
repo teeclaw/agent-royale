@@ -169,15 +169,17 @@
     /* History */
     .history { margin-bottom: 24px; }
     .history__title { font-family: var(--font-d); font-weight: 700; font-size: 0.9375rem; margin-bottom: 12px; }
-    .history__table { width: 100%; border-collapse: collapse; }
+    .history__table { width: max-content; min-width: 100%; border-collapse: collapse; }
     .history__table th {
       font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.08em;
       color: var(--text3); text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border);
       font-weight: 600;
+      white-space: nowrap;
     }
     .history__table td {
       font-size: 0.75rem; padding: 10px 12px; border-bottom: 1px solid var(--border);
       color: var(--text2);
+      white-space: nowrap;
     }
     .history__table tr:hover td { background: var(--bg2); }
     .history__game { font-family: var(--font-d); font-weight: 600; text-transform: capitalize; color: var(--text); }
@@ -436,29 +438,29 @@
       // PnL
       const pnl = toNumber(p.netPnl);
       const pnlEl = document.getElementById('p-pnl');
-      pnlEl.textContent = `${formatEth(p.netPnl, { sign: true })} ETH`;
+      pnlEl.textContent = `${formatEth(p.netPnl, { sign: true })} Ξ`;
       pnlEl.className = 'pnl__value ' + (pnl > 0 ? 'positive' : pnl < 0 ? 'negative' : 'zero');
       document.getElementById('p-pnl-pct').textContent = `${formatPercent(p.netPnlPercent, { sign: true })} from deposit`;
 
       // Stats
       document.getElementById('p-stats').innerHTML = `
         <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value accent">${formatPercent(p.winRate)}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Wagered</div><div class="stat-card__value">${formatEth(p.totalWagered)} ETH</div></div>
-        <div class="stat-card"><div class="stat-card__label">Biggest Win</div><div class="stat-card__value accent">${formatEth(p.biggestWin)} ETH</div></div>
-        <div class="stat-card"><div class="stat-card__label">Biggest Loss</div><div class="stat-card__value danger">${formatEth(p.biggestLoss)} ETH</div></div>
+        <div class="stat-card"><div class="stat-card__label">Wagered</div><div class="stat-card__value">${formatEth(p.totalWagered)} Ξ</div></div>
+        <div class="stat-card"><div class="stat-card__label">Biggest Win</div><div class="stat-card__value accent">${formatEth(p.biggestWin)} Ξ</div></div>
+        <div class="stat-card"><div class="stat-card__label">Biggest Loss</div><div class="stat-card__value danger">${formatEth(p.biggestLoss)} Ξ</div></div>
       `;
 
       // Balances
       document.getElementById('p-balances').innerHTML = `
         <div class="bal-card">
           <div class="bal-card__label">Agent Balance</div>
-          <div class="bal-card__value" style="color:var(--accent)">${formatEth(ch.agentBalance)} ETH</div>
-          <div class="bal-card__sub">Deposited: ${formatEth(ch.agentDeposit)} ETH</div>
+          <div class="bal-card__value" style="color:var(--accent)">${formatEth(ch.agentBalance)} Ξ</div>
+          <div class="bal-card__sub">Deposited: ${formatEth(ch.agentDeposit)} Ξ</div>
         </div>
         <div class="bal-card">
           <div class="bal-card__label">House Balance</div>
-          <div class="bal-card__value" style="color:var(--text2)">${formatEth(ch.casinoBalance)} ETH</div>
-          <div class="bal-card__sub">Deposited: ${formatEth(ch.casinoDeposit)} ETH</div>
+          <div class="bal-card__value" style="color:var(--text2)">${formatEth(ch.casinoBalance)} Ξ</div>
+          <div class="bal-card__sub">Deposited: ${formatEth(ch.casinoDeposit)} Ξ</div>
         </div>
       `;
 
@@ -478,8 +480,8 @@
           <div class="breakdown__game-name">${game}</div>
           <div class="breakdown__row"><span>Rounds</span><span class="breakdown__row-val">${s.rounds}</span></div>
           <div class="breakdown__row"><span>Wins / Losses</span><span class="breakdown__row-val">${s.wins} / ${s.losses}</span></div>
-          <div class="breakdown__row"><span>Wagered</span><span class="breakdown__row-val">${formatEth(s.wagered)} ETH</span></div>
-          <div class="breakdown__row"><span>Paid Out</span><span class="breakdown__row-val">${formatEth(s.payout)} ETH</span></div>
+          <div class="breakdown__row"><span>Wagered</span><span class="breakdown__row-val">${formatEth(s.wagered)} Ξ</span></div>
+          <div class="breakdown__row"><span>Paid Out</span><span class="breakdown__row-val">${formatEth(s.payout)} Ξ</span></div>
           <div class="winrate-bar"><div class="winrate-bar__fill" style="width:${wr}%"></div></div>
         `;
         grid.appendChild(card);
@@ -504,9 +506,9 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="history__game">${g.game}</td>
-          <td><span class="history__detail">${formatEth(g.bet || g.cost)} ETH</span></td>
+          <td><span class="history__detail">${formatEth(g.bet || g.cost)} Ξ</span></td>
           <td>${detail ? `<span class="history__detail">${detail}</span>` : ''}</td>
-          <td><span class="history__result ${isWin ? 'win' : 'lose'}">${isWin ? formatEth(g.payout, { sign: true }) : formatEth(g.bet || g.cost, { sign: true, forceNegative: true })} ETH</span></td>
+          <td><span class="history__result ${isWin ? 'win' : 'lose'}">${isWin ? formatEth(g.payout, { sign: true }) : formatEth(g.bet || g.cost, { sign: true, forceNegative: true })} Ξ</span></td>
           <td><span class="history__time">${g.timestamp ? timeAgo(g.timestamp) : ''}</span></td>
         `;
         tbody.appendChild(tr);

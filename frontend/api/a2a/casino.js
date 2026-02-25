@@ -280,6 +280,23 @@ function coinflipOutcome(seedA, seedB, nonce, choice) {
   return { result, won, resultHash: h };
 }
 
+function slotsOutcomeFromEntropy(randomHex) {
+  const h = sha256(String(randomHex || '0x0'));
+  const r0 = reelFromHash(h, 0);
+  const r1 = reelFromHash(h, 8);
+  const r2 = reelFromHash(h, 16);
+  const names = ['cherry', 'lemon', 'orange', 'diamond', 'seven'];
+  const payouts = [5, 10, 25, 50, 290];
+  const same = r0 === r1 && r1 === r2;
+  const multiplier = same ? payouts[r0] : 0;
+  return { reelIndices: [r0, r1, r2], reels: [names[r0], names[r1], names[r2]], multiplier, resultHash: h };
+}
+
+function lottoOutcomeFromEntropy(randomHex, range = 100) {
+  const n = Number(BigInt(String(randomHex || '0x0')) % BigInt(range)) + 1;
+  return n;
+}
+
 function validateAddress(a) {
   return typeof a === 'string' && ethers.isAddress(a);
 }
@@ -317,7 +334,7 @@ module.exports = async (req, res) => {
       entropyCoinflip: process.env.ENTROPY_COINFLIP || null,
       entropyCallbackGasLimit: Number(process.env.ENTROPY_CALLBACK_GAS_LIMIT || 120000),
       privacy: 'Stealth addresses + state updates in Supabase',
-      actions: ['open_channel','close_channel','channel_status','slots_commit','slots_reveal','coinflip_commit','coinflip_reveal','coinflip_entropy_commit','coinflip_entropy_status','coinflip_entropy_finalize','lotto_buy','lotto_status','info','stats'],
+      actions: ['open_channel','close_channel','channel_status','slots_commit','slots_reveal','slots_entropy_commit','slots_entropy_status','slots_entropy_finalize','coinflip_commit','coinflip_reveal','coinflip_entropy_commit','coinflip_entropy_status','coinflip_entropy_finalize','lotto_buy','lotto_status','lotto_entropy_buy','lotto_entropy_status','lotto_entropy_finalize','info','stats'],
     });
   }
 
@@ -331,7 +348,7 @@ module.exports = async (req, res) => {
   if (!validateAddress(agent)) return err(res, 'Invalid or missing stealthAddress');
 
   const idemKey = req.headers['x-idempotency-key'] || sha256(JSON.stringify(content));
-  if (['open_channel','close_channel','slots_reveal','coinflip_reveal','coinflip_entropy_commit','coinflip_entropy_finalize','lotto_buy'].includes(action)) {
+  if (['open_channel','close_channel','slots_reveal','coinflip_reveal','slots_entropy_commit','slots_entropy_finalize','coinflip_entropy_commit','coinflip_entropy_finalize','lotto_buy','lotto_entropy_buy','lotto_entropy_finalize'].includes(action)) {
     const prev = await getStoredRequest(idemKey);
     if (prev?.response && prev.status === 'done') return reply(res, prev.response);
   }
@@ -413,6 +430,54 @@ module.exports = async (req, res) => {
       });
     }
 
+    if (action === 'slots_entropy_commit') {
+      const ch = await getOpenChannel(agent);
+      if (!ch) return err(res, 'Channel not found', 404, 'CHANNEL_NOT_FOUND');
+
+      const betAmount = toNum(content.betAmount, toNum(content.params?.betAmount, 0));
+      const minBet = 0.0001;
+      if (betAmount < minBet) return err(res, `Min bet: ${minBet} Ξ`, 400, 'INVALID_BET');
+
+      const casinoBal = toNum(ch.casino_balance);
+      const maxBet = casinoBal / (290 * 2);
+      if (betAmount > maxBet) return err(res, `Max bet: ${maxBet} Ξ (bankroll limit)`, 400, 'MAX_BET_EXCEEDED');
+
+      const { provider, casino, ec } = getEntropyChain();
+      const net = await provider.getNetwork();
+      const chainId = Number(net.chainId);
+
+      const roundId = `0x${randHex(32)}`;
+      const userRandom = `0x${randHex(32)}`;
+      const betWei = ethers.parseEther(String(betAmount));
+
+      const fee = await ec.quoteFee();
+      const tx = await ec.connect(casino).requestCoinflip(roundId, agent, 0, betWei, userRandom, { value: fee });
+      await tx.wait();
+
+      let sequenceNumber = null;
+      try {
+        const onchainRound = await ec.getRound(roundId);
+        sequenceNumber = Number(onchainRound.sequenceNumber || onchainRound[3] || 0) || null;
+      } catch (_) {}
+
+      await insertEntropyRound({
+        round_id: roundId,
+        agent,
+        game: 'slots',
+        bet_amount: betAmount,
+        choice: null,
+        request_id: sequenceNumber ? String(sequenceNumber) : null,
+        request_tx_hash: tx.hash,
+        state: 'entropy_requested',
+        created_at: nowIso(),
+      });
+
+      const response = { roundId, requestId: sequenceNumber, requestTxHash: tx.hash, chainId, status: 'entropy_requested', betAmount: String(betAmount), game: 'slots' };
+      await putStoredRequest(idemKey, action, agent, response);
+      await insertEvent('game', action, shortAddr(agent), response);
+      return reply(res, response);
+    }
+
     if (action === 'coinflip_entropy_commit') {
       const ch = await getOpenChannel(agent);
       if (!ch) return err(res, 'Channel not found', 404, 'CHANNEL_NOT_FOUND');
@@ -475,7 +540,7 @@ module.exports = async (req, res) => {
       return reply(res, response);
     }
 
-    if (action === 'coinflip_entropy_status') {
+    if (action === 'slots_entropy_status' || action === 'coinflip_entropy_status' || action === 'lotto_entropy_status') {
       const roundId = content.roundId || content.requestId;
       const row = roundId
         ? (await getEntropyRoundByRoundId(roundId))
@@ -507,7 +572,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (action === 'coinflip_entropy_finalize') {
+    if (action === 'slots_entropy_finalize' || action === 'coinflip_entropy_finalize' || action === 'lotto_entropy_finalize') {
       const roundId = content.roundId || content.requestId;
       const row = roundId
         ? (await getEntropyRoundByRoundId(roundId))
@@ -532,11 +597,42 @@ module.exports = async (req, res) => {
       }
 
       const randomHex = onchain.entropyRandom;
-      const resultBit = Number(BigInt(randomHex) % 2n);
-      const result = resultBit === 0 ? 'heads' : 'tails';
-      const won = row.choice === result;
       const bet = toNum(row.bet_amount, 0);
-      const payout = won ? bet * 1.9 : 0;
+      const game = row.game || (action.startsWith('slots') ? 'slots' : (action.startsWith('lotto') ? 'lotto' : 'coinflip'));
+
+      let result = null;
+      let won = false;
+      let payout = 0;
+      let multiplier = 0;
+      let reels = null;
+      let pickedNumber = null;
+
+      if (game === 'coinflip') {
+        const resultBit = Number(BigInt(randomHex) % 2n);
+        result = resultBit === 0 ? 'heads' : 'tails';
+        won = row.choice === result;
+        payout = won ? bet * 1.9 : 0;
+        multiplier = won ? 1.9 : 0;
+      } else if (game === 'slots') {
+        const out = slotsOutcomeFromEntropy(randomHex);
+        reels = out.reelIndices;
+        result = out.reels.join('-');
+        multiplier = out.multiplier;
+        won = out.multiplier > 0;
+        payout = bet * out.multiplier;
+      } else if (game === 'lotto') {
+        const range = Number(process.env.LOTTO_RANGE || 100);
+        const parts = String(row.choice || '').split(':');
+        pickedNumber = Number(parts[0] || 0);
+        const ticketCount = Number(parts[1] || 1);
+        const winningNumber = lottoOutcomeFromEntropy(randomHex, range);
+        result = String(winningNumber);
+        won = pickedNumber === winningNumber;
+        const ticketPrice = 0.001;
+        const payoutMultiplier = 85;
+        payout = won ? ticketPrice * ticketCount * payoutMultiplier : 0;
+        multiplier = won ? payoutMultiplier : 0;
+      }
 
       const nonce = Number(ch.nonce || 0) + 1;
       const nextAgent = toNum(ch.agent_balance) - bet + payout;
@@ -552,18 +648,19 @@ module.exports = async (req, res) => {
 
       await insertRound({
         agent,
-        game: 'coinflip',
+        game,
         bet,
         payout,
         won,
-        multiplier: won ? 1.9 : 0,
-        reels: null,
-        choice: row.choice,
+        multiplier,
+        reels,
+        choice: game === 'coinflip' ? row.choice : null,
         result,
+        picked_number: game === 'lotto' ? pickedNumber : null,
         nonce,
         timestamp: nowIso(),
       });
-      await upsertGameStats('coinflip', bet, payout, 1);
+      await upsertGameStats(game, bet, payout, 1);
 
       const onchainRequestId = Number(onchain.sequenceNumber || onchain[3] || 0) || null;
       await updateEntropyRound(row.round_id, {
@@ -580,18 +677,22 @@ module.exports = async (req, res) => {
         requestId: onchainRequestId ? String(onchainRequestId) : row.request_id,
         requestTxHash: row.request_tx_hash,
         provider: 'pyth_entropy',
-        choice: row.choice,
+        game,
+        choice: game === 'coinflip' ? row.choice : undefined,
         result,
+        reels: game === 'slots' ? reels : undefined,
+        pickedNumber: game === 'lotto' ? pickedNumber : undefined,
         won,
+        multiplier,
         payout: String(payout),
         agentBalance: String(updated.agent_balance),
         casinoBalance: String(updated.casino_balance),
         nonce,
         proof: {
-          requestId: row.request_id,
+          requestId: onchainRequestId ? String(onchainRequestId) : row.request_id,
           requestTxHash: row.request_tx_hash,
           randomValue: randomHex,
-          formula: 'uint256(randomValue) % 2',
+          formula: game === 'coinflip' ? 'uint256(randomValue) % 2' : (game === 'slots' ? 'sha256(randomValue) -> weighted reels' : `uint256(randomValue) % ${Number(process.env.LOTTO_RANGE || 100)} + 1`),
           derivedResult: result,
         },
       };
@@ -799,6 +900,69 @@ module.exports = async (req, res) => {
         totalTickets,
         totalPool: String(totalPool),
       });
+    }
+
+    if (action === 'lotto_entropy_buy') {
+      const ch = await getOpenChannel(agent);
+      if (!ch) return err(res, 'Channel not found', 404, 'CHANNEL_NOT_FOUND');
+
+      const range = Number(process.env.LOTTO_RANGE || 100);
+      const pickedNumber = Number(content.pickedNumber);
+      const ticketCount = Number(content.ticketCount || 1);
+      if (!Number.isInteger(pickedNumber) || pickedNumber < 1 || pickedNumber > range) return err(res, `pickedNumber must be 1-${range}`, 400, 'INVALID_PICK');
+      if (!Number.isInteger(ticketCount) || ticketCount < 1 || ticketCount > 10) return err(res, 'ticketCount must be 1-10', 400, 'INVALID_TICKET_COUNT');
+
+      const price = 0.001;
+      const betAmount = price * ticketCount;
+      const payoutMultiplier = 85;
+      const maxLiability = betAmount * payoutMultiplier;
+
+      const agentBal = toNum(ch.agent_balance);
+      const casinoBal = toNum(ch.casino_balance);
+      if (agentBal < betAmount) return err(res, 'Insufficient balance for tickets', 400, 'INSUFFICIENT_BALANCE');
+      if (casinoBal < maxLiability) return err(res, `Casino can't cover max payout. Max possible payout: ${maxLiability} Ξ, casino balance: ${casinoBal} Ξ`, 400, 'MAX_BET_EXCEEDED');
+
+      const { provider, casino, ec } = getEntropyChain();
+      const net = await provider.getNetwork();
+      const chainId = Number(net.chainId);
+
+      const roundId = `0x${randHex(32)}`;
+      const userRandom = `0x${randHex(32)}`;
+      const betWei = ethers.parseEther(String(betAmount));
+      const fee = await ec.quoteFee();
+      const tx = await ec.connect(casino).requestCoinflip(roundId, agent, 0, betWei, userRandom, { value: fee });
+      await tx.wait();
+
+      let sequenceNumber = null;
+      try {
+        const onchainRound = await ec.getRound(roundId);
+        sequenceNumber = Number(onchainRound.sequenceNumber || onchainRound[3] || 0) || null;
+      } catch (_) {}
+
+      const nonce = Number(ch.nonce || 0) + 1;
+      const updated = await updateChannel(ch.id, {
+        agent_balance: agentBal - betAmount,
+        casino_balance: casinoBal + betAmount,
+        nonce,
+        games_played: Number(ch.games_played || 0) + 1,
+      });
+
+      await insertEntropyRound({
+        round_id: roundId,
+        agent,
+        game: 'lotto',
+        bet_amount: betAmount,
+        choice: `${pickedNumber}:${ticketCount}`,
+        request_id: sequenceNumber ? String(sequenceNumber) : null,
+        request_tx_hash: tx.hash,
+        state: 'entropy_requested',
+        created_at: nowIso(),
+      });
+
+      const response = { roundId, requestId: sequenceNumber, requestTxHash: tx.hash, chainId, status: 'entropy_requested', pickedNumber, ticketCount, totalCost: String(betAmount), agentBalance: String(updated.agent_balance), casinoBalance: String(updated.casino_balance), nonce, game: 'lotto' };
+      await putStoredRequest(idemKey, action, agent, response);
+      await insertEvent('game', action, shortAddr(agent), response);
+      return reply(res, response);
     }
 
     if (action === 'lotto_buy') {

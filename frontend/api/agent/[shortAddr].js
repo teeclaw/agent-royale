@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
 
     const dep = Number(channel.agent_deposit || 0);
     const bal = Number(channel.agent_balance || 0);
-    const netPnl = bal - dep;
+    const netPnl = Number((bal - dep).toFixed(12));
 
     res.status(200).json({
       agent: shortAddr,
