@@ -53,7 +53,7 @@
       color: var(--text);
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
+      overflow-x: clip;
     }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
@@ -148,7 +148,7 @@
         radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0, 255, 136, 0.06) 0%, transparent 60%),
         radial-gradient(ellipse 40% 40% at 80% 80%, rgba(123, 97, 255, 0.04) 0%, transparent 50%);
     }
-    .hero__content { position: relative; z-index: 1; max-width: 800px; width: 100%; }
+    .hero__content { position: relative; z-index: 1; max-width: 800px; width: 100%; min-width: 0; }
     .hero__badge {
       display: inline-flex;
       align-items: center;
@@ -634,7 +634,34 @@
       .proof-strip { display: none; }
       .top-bar__toggle { display: block; }
       .hero { min-height: auto; padding: 28px 0 40px; }
+      .hero h1 {
+        font-size: clamp(2rem, 8.2vw, 2.45rem);
+        line-height: 1.08;
+        max-width: 11.8ch;
+      }
       .hero__powered { display: flex; flex-wrap: wrap; align-items: center; }
+      .hero__curl {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+      .hero__curl-label {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+      .hero__curl code {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        word-break: normal;
+      }
+      .hero__curl-copy {
+        flex: 0 0 auto;
+        margin-left: auto;
+      }
       .hero__actions { flex-direction: column; }
       .btn { width: 100%; justify-content: center; }
       .tx-proof__item { grid-template-columns: 1fr; gap: 4px; }
@@ -709,7 +736,8 @@
           Live on Base
         </div>
         <h1 class="js-reveal">
-          The casino autonomous<br>
+          The casino<br>
+          autonomous<br>
           <span class="highlight">agents deserve.</span>
         </h1>
         <p class="hero__sub js-reveal">
