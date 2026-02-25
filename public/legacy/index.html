@@ -332,6 +332,31 @@
       background: var(--accent-glow);
       color: var(--accent);
     }
+    .game-card__info {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      display: grid;
+      gap: 6px;
+    }
+    .game-card__info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.75rem;
+    }
+    .game-card__info-label {
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.66rem;
+    }
+    .game-card__info-value {
+      color: var(--text2);
+      font-family: var(--font-m);
+      text-align: right;
+    }
 
     /* ── Architecture ──────────────────────────── */
     .arch__grid {
@@ -523,6 +548,8 @@
       .btn { width: 100%; justify-content: center; }
       .tx-proof__item { grid-template-columns: 1fr; gap: 4px; }
       .tx-proof__label { font-size: 0.64rem; }
+      .game-card__info-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+      .game-card__info-value { text-align: left; }
     }
 
     /* ── Reduced Motion ─────────────────────────── */
@@ -670,6 +697,11 @@
               <span class="game-card__tag">290x Max</span>
               <span class="game-card__tag">Commit-Reveal</span>
             </div>
+            <div class="game-card__info">
+              <div class="game-card__info-row"><span class="game-card__info-label">Min bet</span><span class="game-card__info-value">0.0001 ETH</span></div>
+              <div class="game-card__info-row"><span class="game-card__info-label">House edge</span><span class="game-card__info-value">5%</span></div>
+              <div class="game-card__info-row"><span class="game-card__info-label">Settlement</span><span class="game-card__info-value">State channel (EIP-712)</span></div>
+            </div>
           </div>
           <div class="game-card js-reveal">
             <div class="game-card__icon"><svg width="28" height="28" viewBox="0 0 40 40" fill="none"><rect x="6" y="10" width="28" height="20" rx="3" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="17" x2="34" y2="17" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.4"/><circle cx="14" cy="24" r="2.5" stroke="var(--accent)" stroke-width="1.2"/><circle cx="22" cy="24" r="2.5" stroke="var(--accent)" stroke-width="1.2"/><circle cx="30" cy="24" r="2.5" fill="var(--accent)" fill-opacity="0.3" stroke="var(--accent)" stroke-width="1.2"/><text x="14" y="26" text-anchor="middle" fill="var(--accent)" font-size="4" font-family="monospace">7</text><text x="22" y="26" text-anchor="middle" fill="var(--accent)" font-size="4" font-family="monospace">3</text><text x="30" y="26" text-anchor="middle" fill="var(--accent)" font-size="4" font-family="monospace">?</text></svg></div>
@@ -683,6 +715,11 @@
               <span class="game-card__tag">85x Payout</span>
               <span class="game-card__tag">0.001 ETH/ticket</span>
             </div>
+            <div class="game-card__info">
+              <div class="game-card__info-row"><span class="game-card__info-label">Entry</span><span class="game-card__info-value">0.001 ETH / ticket</span></div>
+              <div class="game-card__info-row"><span class="game-card__info-label">Draw cadence</span><span class="game-card__info-value">Every 6 hours</span></div>
+              <div class="game-card__info-row"><span class="game-card__info-label">Model</span><span class="game-card__info-value">Bookmaker (no pooled pot)</span></div>
+            </div>
           </div>
           <div class="game-card js-reveal">
             <div class="game-card__icon"><svg width="28" height="28" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="10" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="3 2"/><path d="M16 16 L20 12 L24 16" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 24 L20 28 L24 24" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="14" y1="20" x2="26" y2="20" stroke="currentColor" stroke-width="1" stroke-opacity="0.4"/></svg></div>
@@ -695,6 +732,11 @@
               <span class="game-card__tag game-card__tag--accent">95% RTP</span>
               <span class="game-card__tag">1.9x Payout</span>
               <span class="game-card__tag">Instant</span>
+            </div>
+            <div class="game-card__info">
+              <div class="game-card__info-row"><span class="game-card__info-label">Min bet</span><span class="game-card__info-value">0.0001 ETH</span></div>
+              <div class="game-card__info-row"><span class="game-card__info-label">Win chance</span><span class="game-card__info-value">50 / 50</span></div>
+              <div class="game-card__info-row"><span class="game-card__info-label">Finality</span><span class="game-card__info-value">Single reveal round</span></div>
             </div>
           </div>
         </div>
