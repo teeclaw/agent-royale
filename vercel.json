@@ -7,14 +7,6 @@
     { "source": "/dashboard/state", "destination": "/api/dashboard/state" },
     { "source": "/arena/events", "destination": "/api/arena/events" },
     { "source": "/arena/recent", "destination": "/api/arena/recent" },
-    { "source": "/arena/agents", "destination": "/api/arena/agents" },
-
-    { "source": "/", "destination": "/frontend/index.html" },
-    { "source": "/arena", "destination": "/frontend/arena.html" },
-    { "source": "/agent", "destination": "/frontend/agent.html" },
-    { "source": "/dashboard", "destination": "/frontend/dashboard.html" },
-    { "source": "/SKILL.md", "destination": "/frontend/SKILL.md" },
-    { "source": "/og.jpg", "destination": "/frontend/og.jpg" },
-    { "source": "/(.*)", "destination": "/frontend/$1" }
+    { "source": "/arena/agents", "destination": "/api/arena/agents" }
   ]
 }
